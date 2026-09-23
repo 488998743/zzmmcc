@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>恐龙找物</title>
+<link rel="stylesheet" href="css/app.css">
+<script>
+/* 首帧就把 rpx 定好：窗口宽 ≥900px 时按 1px 算（等于小程序设计稿尺寸），窄屏按比例缩小 */
+document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.innerWidth, 900) / 750) + 'px');
+</script>
+</head>
+<body>
+<div class="app play" id="app">
+
+  <div class="topbar">
+    <div class="tb-btn" id="btnBack">‹ 返回</div>
+    <div class="tb-title" id="tbTitle">第 1 关</div>
+    <div class="tb-count" id="tbCount"></div>
+    <div class="tb-btn" id="btnStory">故事</div>
+    <div class="tb-btn hint-btn" id="btnHint">提示</div>
+  </div>
+
+  <div class="state" id="state">正在加载关卡资源…</div>
+
+  <div id="game" hidden>
+    <!-- 上半：图画 + 右侧物品栏（对应原书侧栏，格与格之间用线隔开） -->
+    <div class="board" id="board">
+      <div class="stage" id="stage">
+        <div class="picbox" id="picbox">
+          <img class="pic" id="picimg" alt="关卡图" draggable="false">
+          <!-- 找到的物品：图中这一块变成金黄色 -->
+          <div id="hots"></div>
+          <!-- 提示光圈 -->
+          <div class="pulse" id="pulse" hidden></div>
+          <!-- 点错了：闪一下的圈（小程序里是短振动） -->
+          <div class="miss" id="miss" hidden></div>
+        </div>
+      </div>
+      <div class="sidebar" id="sidebar"></div>
+    </div>
+
+    <!-- 下半：底栏物品（对应原书底栏，横跨整个宽度，格与格之间用线隔开） -->
+    <div class="footblock" id="footblock"></div>
+  </div>
+
+  <!-- 通关 -->
+  <div class="overlay" id="done" hidden>
+    <div class="panel card">
+      <div class="panel-emoji">🎉</div>
+      <div class="panel-title">全部找到啦！</div>
+      <div class="panel-sub" id="doneSub"></div>
+      <div class="panel-btns">
+        <button class="btn ghost small" id="btnReplay">再玩一次</button>
+        <button class="btn small" id="btnNext">下一关</button>
+        <button class="btn ghost small" id="btnHome">返回列表</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 故事 / 标题 -->
+  <div class="overlay story" id="story" hidden>
+    <img class="story-img" id="storyImg" alt="故事">
+    <div class="story-tip">点击任意位置关闭</div>
+  </div>
+
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/play.js"></script>
+</body>
+</html>

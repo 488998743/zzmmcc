@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>恐龙 · 找物挑战</title>
+<link rel="stylesheet" href="css/app.css">
+<script>
+document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.innerWidth, 900) / 750) + 'px');
+</script>
+</head>
+<body>
+<div class="app">
+  <div class="wrap">
+
+    <div class="hero card">
+      <img class="hero-cover" id="cover" alt="封面" draggable="false">
+      <div class="hero-body">
+        <div class="hero-name" id="bookName">恐龙</div>
+        <div class="hero-sub" id="heroSub"></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="hero-meta" id="heroMeta"></div>
+        <div class="hero-btns">
+          <button class="btn" id="btnContinue">开始第 1 关</button>
+          <button class="btn ghost small" id="btnAbout">说明</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint" id="hint" hidden></div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="foot">
+      <button class="btn ghost small" id="btnReset">重置全部进度</button>
+    </div>
+
+    <div class="copy">素材来源：《极限视觉挑战 · 恐龙》扫描页 · 仅供学习交流</div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>

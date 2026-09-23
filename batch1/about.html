@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>玩法说明 · 恐龙找物</title>
+<link rel="stylesheet" href="css/app.css">
+<script>
+document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.innerWidth, 900) / 750) + 'px');
+</script>
+</head>
+<body>
+<div class="app">
+  <div class="wrap">
+
+    <div class="title-lg">玩法说明</div>
+    <div class="card box">
+      <div class="li">1. 每关中间是一幅大图，右侧和下方列着要找的小物品（照原书的侧栏 + 底栏排的）。</div>
+      <div class="li">2. 在大图里点中那个物品：点对了，图旁边的图案会变成金黄色，图里那个物品也会变成金黄色。</div>
+      <div class="li">3. 点「提示」会让还没找到的物品闪一圈光圈，在光圈处点一下就能过；长按某个卡片可以直接算找到。</div>
+      <div class="li">4. 进度自动存在浏览器本地，随时关掉页面，下次进来接着找。</div>
+    </div>
+
+    <div class="title-lg mt">快捷键</div>
+    <div class="card box">
+      <div class="li"><kbd>H</kbd> 提示　<kbd>S</kbd> 故事　<kbd>Esc</kbd> 关闭浮层　<kbd>Enter</kbd> 通关后进入下一关</div>
+    </div>
+
+    <div class="title-lg mt">关卡资源</div>
+    <div class="card box">
+      <div class="li">《恐龙》共 <span id="total">54</span> 关，图片就在 <kbd>assets/</kbd> 目录里，不用联网、不用服务器。</div>
+      <div class="li tip">
+        小程序版把图片按分包（sp1…sp8）打包，那是微信 2MB 包体限制逼出来的；
+        网页没有这个限制，所以这里是平铺的 <kbd>assets/pic|hdr|spr/dino/&lt;页号&gt;.jpg|png</kbd>。
+        素材重新生成后跑一次 <kbd>python tools/build-web.py</kbd> 即可同步关卡数据和图片。
+      </div>
+    </div>
+
+    <div class="title-lg mt">进度</div>
+    <div class="card box">
+      <div class="li small">存在浏览器的 localStorage（键名 <kbd>vc_progress_v1</kbd>），和小程序版的进度不通用。</div>
+      <div class="row">
+        <button class="btn ghost small" id="btnReset">清空所有进度</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn ghost small" id="btnBack">‹ 返回</button>
+    </div>
+
+    <div class="copy">素材来源：《极限视觉挑战 · 恐龙》扫描页 · 仅供学习交流</div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/data.js"></script>
+<script src="js/about.js"></script>
+</body>
+</html>
