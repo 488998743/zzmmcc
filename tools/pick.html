@@ -258,7 +258,9 @@
   el.grow.addEventListener('click', function () { scaleRect(1.1) })
   el.reset.addEventListener('click', function () { delete S.rects[key(S.index)]; render() })
   el.copy.addEventListener('click', function () {
-    copy(el.rectText.textContent, '已复制当前 rect，发给我就行')
+    var l = lv()
+    var text = '第' + S.level + '关 ' + nameOf(l.items[S.index], S.index) + ' rect=' + el.rectText.textContent
+    copy(text, '已复制（带关卡和物品名），发给我就行')
   })
   el.copyAll.addEventListener('click', function () {
     var lines = ['恐龙 找物坐标修正：']
