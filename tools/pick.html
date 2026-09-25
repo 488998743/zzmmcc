@@ -71,7 +71,8 @@
   <div class="log muted" id="log"></div>
 </div>
 
-<script src="../js/data.js"></script>
+<!-- 关卡数据按分钟时间戳加载，改完某个物品的位置刷新就能看到最新值 -->
+<script>document.write('<script src="../js/data.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>')</script>
 <script>
 (function () {
   var BOOK = window.VC_BOOK_DATA.dino

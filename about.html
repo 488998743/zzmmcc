@@ -54,7 +54,8 @@ document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.
 
 <script src="js/util.js?v=20260925"></script>
 <script src="js/store.js?v=20260925"></script>
-<script src="js/data.js?v=20260925"></script>
+<!-- 关卡数据按分钟时间戳加载：手工修正了某个物品的位置之后立刻生效，不会被浏览器缓存卡住 -->
+<script>document.write('<script src="js/data.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>')</script>
 <script src="js/about.js?v=20260925"></script>
 </body>
 </html>
