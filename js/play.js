@@ -92,13 +92,15 @@
    * 和图中那个物体一样大——这正是原书的做法，玩家看到的比例是真实的。
    * 底栏按真实宽度贪心分行，放不下就换行，绝不滚动。
    */
-  function buildCards(all, sb, dispW, cellPad, availRowW, nameFs, nameH) {
-    // 精灵图里的图标是按 104 高度归一化过的，直接用它的像素尺寸会丢掉相对大小，
-    // 所以尺寸必须从 rect 反推。
+  function buildCards(all, sb, dispW, dispH, cellPad, availRowW, nameFs, nameH) {
+    // 卡片自己有 2rpx 的边框，网页版是 border-box（边框占用内容区），
+    // 不算进去的话里面的图标会被 flex 压小几个像素，1:1 就对不上了
+    var bd = Math.max(2, Math.round(4 * S.rpx))
+    // 物体在屏幕上的真实尺寸：rect 是它在图中占的比例，乘图画显示尺寸即可（宽高各算各的）
     var nat = all.map(function (it) {
       var r = it.rect
       if (r && r[2] > 0 && r[3] > 0) {
-        return { nw: r[2] * dispW, nh: r[3] * dispW * (it.icon[3] / it.icon[2]) }
+        return { nw: r[2] * dispW, nh: r[3] * dispH }
       }
       return { nw: 0, nh: 0 }
     })
@@ -107,18 +109,15 @@
     var fallback = known.length ? known[Math.floor(known.length / 2)] : 40
     for (var i = 0; i < nat.length; i++) {
       if (!(nat[i].nw > 0)) {
+        // 没有 rect 的物品只能按图标自己的比例摆一个中等大小
         nat[i].nw = fallback
         nat[i].nh = fallback * (all[i].icon[3] / all[i].icon[2])
       }
     }
-    // 所有卡片共用一个放大系数：物品之间的相对大小和图里一致，整体又能看清。
-    // 系数取"侧栏里最宽的那个正好放得下"，并设上限避免个别关卡过度放大。
-    var maxSideW = 0
-    for (var j = 0; j < sb; j++) if (nat[j].nw > maxSideW) maxSideW = nat[j].nw
-    var sideInnerW = S.sideW - cellPad * 2
-    var E = 2.8
-    if (maxSideW > 0) E = Math.min(E, sideInnerW * 0.94 / maxSideW)
-    if (!(E > 0)) E = 1
+    // 卡片图标和图中那个物品**一样大**（1:1）：直接取物体在图里的显示尺寸，不做整体放大。
+    // 这样玩家能照着卡片判断"要找一个多大的东西"。想略微放大便于辨认，就把 E 调成 1.2、1.5，
+    // 代价是宽度超过侧栏格子的物品会被单独缩回去（那时就不严格 1:1 了）。
+    var E = 1
 
     var list = all.map(function (it, k) {
       var ic = it.icon
@@ -126,23 +125,22 @@
       var hot = it.hot || null
       var name = it.name || ''
       var w = Math.max(4, Math.round(nat[k].nw * E))
-      // 图标按"填满这张卡片"缩放，比例用图标自己的，和 rect 的比例一致
-      var s = (ic[2] > 0) ? w / ic[2] : 1
-      var h = Math.max(4, Math.round(ic[3] * s))
+      var h = Math.max(4, Math.round(nat[k].nh * E))
       var labelW = name ? Math.round(name.length * nameFs + 8) : 0
       return {
         index: k, icon: ic, iconY: it.iconY, hot: hot, rect: r, name: name,
         labelW: labelW,
-        sprScale: s, iconW: w, iconH: h,
-        cardW: Math.max(w, labelW), cardH: h + (name ? nameH : 0),
-        cellW: k < sb ? 0 : Math.max(w, labelW) + cellPad * 2,
-        // 侧栏是等高的格子：这里先记下格子内高，下面按它把过大的图标缩进去
-        sideScale: 1
+        // 精灵图里那块图案按卡片格子拉伸：横竖各有自己的缩放，和 hot 覆盖块同一套算法
+        sprScaleX: ic[2] > 0 ? w / ic[2] : 1,
+        sprScaleY: ic[3] > 0 ? h / ic[3] : 1,
+        iconW: w, iconH: h,
+        cardW: Math.max(w, labelW) + bd, cardH: h + (name ? nameH : 0) + bd,
+        cellW: k < sb ? 0 : Math.max(w, labelW) + bd + cellPad * 2
       }
     })
 
-    // 名称让格子变宽，按图标比例算出的高度可能塞不下：整体缩小图标再排，
-    // 直到每行都放得下；缩得太小就停（下限 floorH），宁可留白也不压到看不清
+    // 名称让格子变宽，一行放不下时整体缩小再排（这时就不严格 1:1 了，但总比溢出好）；
+    // 缩得太小就停（下限 floorH），宁可留白也不压到看不清
     var floorH = Math.round(26 * S.rpx)
     var shrink = 1
     var rows = []
@@ -151,13 +149,13 @@
         var o = list[m]
         var ic = o.icon
         var w = Math.max(4, Math.round(nat[m].nw * E * shrink))
-        var s = (ic[2] > 0) ? w / ic[2] : 1
-        var h = Math.max(4, Math.round(ic[3] * s))
-        o.sprScale = s
+        var h = Math.max(4, Math.round(nat[m].nh * E * shrink))
+        o.sprScaleX = ic[2] > 0 ? w / ic[2] : 1
+        o.sprScaleY = ic[3] > 0 ? h / ic[3] : 1
         o.iconW = w
         o.iconH = h
-        o.cardW = Math.max(w, o.labelW)
-        o.cardH = h + (o.name ? nameH : 0)
+        o.cardW = Math.max(w, o.labelW) + bd
+        o.cardH = h + (o.name ? nameH : 0) + bd
         o.cellW = o.cardW + cellPad * 2
       }
       rows = []
@@ -229,9 +227,21 @@
     // 手机上的结果和算两遍一致（本来就是铺满宽度），只有宽屏短窗口会明显变好。
     function layoutAt(w) {
       var h = Math.max(1, Math.round(w * pic.h / pic.w))
-      var c = buildCards(all, sb, w, cellPad, availRowW, nameFs, nameH)
+      var c = buildCards(all, sb, w, h, cellPad, availRowW, nameFs, nameH)
       var sh = Math.max(180, S.winH - S.barH - c.footH - pad * 2)
-      return { w: w, h: h, cards: c, stageH: sh, fit: h + pad * 2 <= sh }
+      // 侧栏那几格还得装得下 1:1 的物品：格子总高 ≥ 各物品"图标高 + 名字高 + 上下留白"之和，
+      // 宽度也不能超过侧栏格子的内宽。装不下就说明图画挑宽了，往回收一点。
+      var sideNeed = 0
+      var sideMaxW = 0
+      for (var si = 0; si < sb && si < c.list.length; si++) {
+        var so = c.list[si]
+        sideNeed += so.iconH + (so.name ? nameH : 0) + cellPad * 2
+        if (so.iconW > sideMaxW) sideMaxW = so.iconW
+      }
+      return {
+        w: w, h: h, cards: c, stageH: sh,
+        fit: h + pad * 2 <= sh && sideNeed <= sh && sideMaxW <= S.sideW - cellPad * 2
+      }
     }
     var maxW = Math.max(60, S.winW - S.sideW - pad * 2)
     var best = layoutAt(maxW)
@@ -250,23 +260,34 @@
     var cards = best.cards
     var stageH = best.stageH
 
-    // 侧栏是等高的格子：图标在格里居中，过大的按格缩一下，保证不越线
+    // 侧栏格子按物品的真实高度分配高度（等高格子的话，桌面上图画一大，
+    // 高个子物品就塞不进自己的格子、只能被缩小，1:1 就守不住了）：
+    // 每个格子的 flex 权重 = 图标高 + 名字高，多出来的空间也按这个比例分。
     var items = cards.list
-    var cellInnerH = Math.round(stageH / Math.max(1, sb)) - cellPad * 2
     var sideInnerW = S.sideW - cellPad * 2
+    var flexSum = 0
     for (var i = 0; i < sb && i < items.length; i++) {
-      var o = items[i]
+      var fo = items[i]
+      // 权重里要带上每格的上下留白，否则留白会吃掉本该分给物品的那部分高度
+      fo.cellFlex = Math.max(1, fo.iconH + (fo.name ? Math.round(nameFs * 1.45) : 0) + cellPad * 2)
+      flexSum += fo.cellFlex
+    }
+    for (var i2 = 0; i2 < sb && i2 < items.length; i2++) {
+      var o = items[i2]
       var nh = o.name ? Math.round(nameFs * 1.45) : 0
-      var maxIconH = Math.max(6, cellInnerH - nh)
+      // 这一格实际分到的高度（正常情况下正好装下；极端布局下兜底缩一下，别越线）
+      var cellH = flexSum > 0 ? stageH * o.cellFlex / flexSum : stageH / Math.max(1, sb)
+      var maxIconH = Math.max(6, cellH - cellPad * 2 - nh)
       var k = 1
       if (o.iconW > sideInnerW) k = Math.min(k, sideInnerW / o.iconW)
       if (o.iconH > maxIconH) k = Math.min(k, maxIconH / o.iconH)
       if (k < 1) {
-        o.sprScale *= k
+        o.sprScaleX *= k
+        o.sprScaleY *= k
         o.iconW = Math.max(4, Math.round(o.iconW * k))
         o.iconH = Math.max(4, Math.round(o.iconH * k))
-        o.cardW = Math.max(o.iconW, o.labelW)
-        o.cardH = o.iconH + nh
+        o.cardW = Math.max(o.iconW, o.labelW) + bd
+        o.cardH = o.iconH + nh + bd
       }
     }
     applyFoundFlags(items)
@@ -302,7 +323,8 @@
     el.sidebar.style.width = S.sideW + 'px'
     var sideHtml = ''
     for (var s1 = 0; s1 < sb && s1 < items.length; s1++) {
-      sideHtml += '<div class="sidecell" data-index="' + items[s1].index + '">' +
+      sideHtml += '<div class="sidecell" data-index="' + items[s1].index + '"' +
+        (items[s1].cellFlex ? ' style="flex:' + items[s1].cellFlex + '"' : '') + '>' +
         cellHtml(items[s1], sprUrl, spr, nameFs, nameH) + '</div>'
     }
     el.sidebar.innerHTML = sideHtml
@@ -349,8 +371,8 @@
       ' style="width:' + o.cardW + 'px;height:' + o.cardH + 'px">' +
       '<div class="crop" style="width:' + o.iconW + 'px;height:' + o.iconH + 'px">' +
       '<img src="' + sprUrl + '" alt="" draggable="false"' +
-      ' style="width:' + spr.w * o.sprScale + 'px;height:' + spr.h * o.sprScale + 'px;' +
-      'margin-left:' + (-x * o.sprScale) + 'px;margin-top:' + (-y * o.sprScale) + 'px">' +
+      ' style="width:' + spr.w * o.sprScaleX + 'px;height:' + spr.h * o.sprScaleY + 'px;' +
+      'margin-left:' + (-x * o.sprScaleX) + 'px;margin-top:' + (-y * o.sprScaleY) + 'px">' +
       '</div>' +
       (o.name ? '<div class="cname" style="font-size:' + nameFs + 'px;line-height:' + nameH + 'px">' +
         util.esc(o.name) + '</div>' : '') +
