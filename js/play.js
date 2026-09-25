@@ -133,7 +133,6 @@
       return {
         index: k, icon: ic, iconY: it.iconY, hot: hot, rect: r, name: name,
         labelW: labelW,
-        ovScale: (r && hot) ? (r[2] * dispW) / hot[2] : 1,
         sprScale: s, iconW: w, iconH: h,
         cardW: Math.max(w, labelW), cardH: h + (name ? nameH : 0),
         cellW: k < sb ? 0 : Math.max(w, labelW) + cellPad * 2,
@@ -330,9 +329,15 @@
     updateProgress()
   }
 
+  /**
+   * 关卡图片地址。带一个版本号：图片换过之后（比如手工修了某关的 rect/精灵图），
+   * 浏览器不会继续用缓存里的旧图。改了图片就把它 +1。
+   */
+  var ASSET_V = '20260923'
+
   function url(kind, lv) {
     var ext = kind === 'spr' ? '.png' : '.jpg'
-    return 'assets/' + kind + '/dino/' + lv.page + ext
+    return 'assets/' + kind + '/dino/' + lv.page + ext + '?v=' + ASSET_V
   }
 
   /** 一张卡片：窗口里裁出精灵图上那块图标；找到过就换成金黄那一版 */
@@ -355,15 +360,19 @@
   /** 找到的物品：把 hot 那块透明覆盖图按 rect 的尺寸贴到图上（金黄色只落在物体轮廓上） */
   function renderHots() {
     var html = ''
+    var box = S.box
     for (var i = 0; i < S.cards.length; i++) {
       var o = S.cards[i]
       if (!o.found || !o.hot || !o.rect) continue
-      var box = S.box
+      // 覆盖图横竖分别缩放到正好填满热区框：绝大多数物品覆盖图的长宽比和物体一致，
+      // 算出来和"等比缩放"完全一样；铅笔、针这类细长物品不一致，拉伸后才不会只盖住一小块
+      var sx = (o.rect[2] * box.width) / o.hot[2]
+      var sy = (o.rect[3] * box.height) / o.hot[3]
       html += '<div class="hot" style="left:' + o.rect[0] * box.width + 'px;top:' + o.rect[1] * box.height +
         'px;width:' + o.rect[2] * box.width + 'px;height:' + o.rect[3] * box.height + 'px">' +
-        '<img src="' + S.sprUrl + '" alt="" style="width:' + S.spr.w * o.ovScale + 'px;height:' +
-        S.spr.h * o.ovScale + 'px;margin-left:' + (-o.hot[4] * o.ovScale) + 'px;margin-top:' +
-        (-o.hot[5] * o.ovScale) + 'px">' +
+        '<img src="' + S.sprUrl + '" alt="" style="width:' + S.spr.w * sx + 'px;height:' +
+        S.spr.h * sy + 'px;margin-left:' + (-o.hot[4] * sx) + 'px;margin-top:' +
+        (-o.hot[5] * sy) + 'px">' +
         '</div>'
     }
     el.hots.innerHTML = html
