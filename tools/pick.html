@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>找物坐标拾取 · 恐龙</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #22202a; color: #eee;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  .bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 10px; flex-wrap: wrap; }
+  button { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.25); background: #34313f; color: #eee; cursor: pointer; }
+  button:active { transform: scale(.97); }
+  button.on { background: #ffb400; color: #3a2c00; border-color: transparent; font-weight: 600; }
+  input[type=number] { font: inherit; width: 64px; padding: 5px 8px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.25); background: #34313f; color: #eee; }
+  .chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 10px 8px; flex: none; }
+  .chips button { white-space: nowrap; font-size: 13px; padding: 5px 10px; }
+  #stageWrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+    padding: 0 10px; overflow: hidden; }
+  #stage { position: relative; touch-action: none; line-height: 0; }
+  #stage img { display: block; max-width: 100%; max-height: 100%; }
+  .box { position: absolute; pointer-events: none; }
+  .box.cur { outline: 2px solid #ff4d4d; background: rgba(255,77,77,.12); }
+  .box.oth { outline: 1px dashed rgba(255,255,255,.35); }
+  .box.new { outline: 2px solid #3ca0ff; background: rgba(60,160,255,.18); }
+  .panel { flex: none; padding: 10px; background: #1b1923; font-size: 14px; line-height: 1.6; }
+  code { background: #34313f; padding: 2px 6px; border-radius: 6px; font-size: 13px; word-break: break-all; }
+  .muted { color: #9d99ab; font-size: 13px; }
+  .log { max-height: 88px; overflow: auto; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span>关卡</span>
+  <button id="prev">◀</button>
+  <input type="number" id="lv" min="1" value="1">
+  <button id="next">▶</button>
+  <span class="muted" id="lvinfo"></span>
+  <span style="flex:1"></span>
+  <button id="showAll" class="on">显示全部框</button>
+  <button id="shrink">缩小 10%</button>
+  <button id="grow">放大 10%</button>
+</div>
+
+<div class="chips" id="chips"></div>
+
+<div id="stageWrap"><div id="stage"><img id="pic" alt=""></div></div>
+
+<div class="panel">
+  <div style="display:flex;gap:10px;align-items:center">
+    <div id="iconWrap" style="flex:none;width:64px;height:64px;overflow:hidden;position:relative;border-radius:10px;background:#fff">
+      <img id="iconImg" alt="" style="position:absolute;left:0;top:0">
+    </div>
+    <div>
+      <div>当前：<b id="curName">—</b></div>
+      <div class="muted">上图小框里就是它（原书物品卡片图案），照着在图里找</div>
+    </div>
+  </div>
+  <div>rect：<code id="rectText">—</code></div>
+  <div class="muted" id="pxText">—</div>
+  <div class="bar" style="padding:6px 0 0">
+    <button id="copy">复制这个 rect</button>
+    <button id="reset">还原这个物品</button>
+    <button id="copyAll">复制全部改动</button>
+    <span class="muted">点图 = 把框的中心放过去；按住拖 = 重新画一个框</span>
+  </div>
+  <div class="log muted" id="log"></div>
+</div>
+
+<script src="../js/data.js"></script>
+<script>
+(function () {
+  var BOOK = window.VC_BOOK_DATA.dino
+  var levels = BOOK.levels
+  var S = {
+    level: Math.max(1, Number((location.search.match(/level=(\d+)/) || [])[1] || 1)),
+    index: 0,          // 选中的物品序号
+    rects: {},         // 本次改过的：'lv:index' -> [x,y,w,h]
+    showAll: true,
+    dragFrom: null
+  }
+  var el = {}
+  ;['prev', 'next', 'lv', 'lvinfo', 'chips', 'stage', 'pic', 'curName', 'rectText', 'pxText',
+    'copy', 'reset', 'copyAll', 'log', 'showAll', 'shrink', 'grow', 'iconImg'
+  ].forEach(function (id) { el[id] = document.getElementById(id) })
+
+  function lv() { return levels.filter(function (l) { return l.level === S.level })[0] }
+  function key(i) { return S.level + ':' + i }
+
+  function curRect(l) { return S.rects[key(S.index)] || l.items[S.index].rect }
+  function nameOf(it, i) { return it.name || ('第' + (i + 1) + '个(无名)') }
+
+  function load() {
+    var l = lv()
+    if (!l) { el.lvinfo.textContent = '没有这一关'; return }
+    el.lv.value = l.level
+    el.lvinfo.textContent = '共 ' + levels.length + ' 关 · 本关 ' + l.items.length + ' 个物品 · 第 ' + l.page + ' 页'
+    el.pic.src = '../assets/pic/dino/' + l.page + '.jpg'
+    el.chips.innerHTML = l.items.map(function (it, i) {
+      return '<button data-i="' + i + '">' + nameOf(it, i) + '</button>'
+    }).join('')
+    markChips()
+    render()
+  }
+
+  function markChips() {
+    var l = lv()
+    Array.prototype.forEach.call(el.chips.children, function (b) {
+      var i = Number(b.getAttribute('data-i'))
+      var changed = !!S.rects[key(i)]
+      b.className = (i === S.index ? 'on ' : '') + (changed ? 'changed' : '')
+      b.textContent = nameOf(l.items[i], i) + (changed ? ' *' : '')
+    })
+  }
+
+  /** 把归一化 rect 写成图上百分比的框 */
+  function drawBoxes() {
+    var l = lv()
+    var html = ''
+    l.items.forEach(function (it, i) {
+      var r = (i === S.index) ? curRect(l) : it.rect
+      if (!r) return
+      if (i === S.index) {
+        html += '<div class="box cur" style="left:' + (r[0] * 100) + '%;top:' + (r[1] * 100) +
+          '%;width:' + (r[2] * 100) + '%;height:' + (r[3] * 100) + '%"></div>'
+      } else if (S.showAll) {
+        html += '<div class="box oth" style="left:' + (r[0] * 100) + '%;top:' + (r[1] * 100) +
+          '%;width:' + (r[2] * 100) + '%;height:' + (r[3] * 100) + '%"></div>'
+      }
+    })
+    if (S.dragFrom) {
+      var r2 = S.dragRect
+      html += '<div class="box new" style="left:' + (r2[0] * 100) + '%;top:' + (r2[1] * 100) +
+        '%;width:' + (r2[2] * 100) + '%;height:' + (r2[3] * 100) + '%"></div>'
+    }
+    // 保留 img 节点，只换后面的框
+    var img = el.stage.querySelector('img')
+    el.stage.innerHTML = ''
+    el.stage.appendChild(img)
+    el.stage.insertAdjacentHTML('beforeend', html)
+  }
+
+  function render() {
+    var l = lv()
+    if (!l) return
+    var it = l.items[S.index]
+    var r = curRect(l)
+    el.curName.textContent = nameOf(it, S.index)
+    // 卡片图案：把精灵图里这个物品的普通图标裁出来放大显示，方便在图里照着找
+    var BOX = 64
+    var ic = it.icon
+    var k = BOX / Math.max(ic[2], ic[3])       // 让这一格的长边正好铺满 64px
+    var img = el.iconImg
+    img.src = '../assets/spr/dino/' + l.page + '.png'
+    img.style.width = (l.spr.w * k) + 'px'     // 整张精灵图缩到 k 倍
+    img.style.height = (l.spr.h * k) + 'px'
+    img.style.marginLeft = ((BOX - ic[2] * k) / 2 - ic[0] * k) + 'px'   // 居中放这一格
+    img.style.marginTop = ((BOX - ic[3] * k) / 2 - ic[1] * k) + 'px'
+    el.rectText.textContent = '[' + r.map(function (v) { return Number(v.toFixed(5)) }).join(', ') + ']'
+    var W = l.pic.w, H = l.pic.h
+    el.pxText.textContent = '图上像素 x ' + Math.round(r[0] * W) + '~' + Math.round((r[0] + r[2]) * W) +
+      '，y ' + Math.round(r[1] * H) + '~' + Math.round((r[1] + r[3]) * H) +
+      '（' + Math.round(r[2] * W) + '×' + Math.round(r[3] * H) + '）· 图 ' + W + '×' + H
+    var keys = Object.keys(S.rects)
+    el.log.textContent = keys.length ? ('本次改过 ' + keys.length + ' 个：' + keys.map(function (k) {
+      var p = k.split(':')
+      return '第' + p[0] + '关 ' + nameOf(levels.filter(function (x) { return x.level === Number(p[0]) })[0].items[Number(p[1])], Number(p[1]))
+    }).join('，')) : ''
+    markChips()
+    drawBoxes()
+  }
+
+  /** 把屏幕坐标换算成图内 0~1 坐标 */
+  function norm(ev) {
+    var b = el.stage.getBoundingClientRect()
+    return [(ev.clientX - b.left) / b.width, (ev.clientY - b.top) / b.height]
+  }
+
+  function setRect(r) {
+    S.rects[key(S.index)] = r.map(function (v) { return Number(v.toFixed(5)) })
+    render()
+  }
+
+  function onDown(ev) {
+    if (!lv()) return
+    ev.preventDefault()
+    var p = norm(ev)
+    if (p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1) return
+    S.dragFrom = p
+    S.dragRect = [p[0], p[1], 0.001, 0.001]
+    render()
+  }
+
+  function onMove(ev) {
+    if (!S.dragFrom) return
+    ev.preventDefault()
+    var p = norm(ev)
+    var a = S.dragFrom
+    S.dragRect = [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.abs(p[0] - a[0]), Math.abs(p[1] - a[1])]
+    render()
+  }
+
+  function onUp(ev) {
+    if (!S.dragFrom) return
+    var a = S.dragFrom
+    S.dragFrom = null
+    var p = norm(ev)
+    var moved = Math.abs(p[0] - a[0]) > 0.012 || Math.abs(p[1] - a[1]) > 0.012
+    if (moved) {
+      // 拖出一个新框（太小的按最小尺寸兜一下）
+      setRect([Math.min(a[0], p[0]), Math.min(a[1], p[1]),
+        Math.max(0.004, Math.abs(p[0] - a[0])), Math.max(0.004, Math.abs(p[1] - a[1]))])
+    } else {
+      // 点一下：把现有框的中心挪到点的位置
+      var l = lv(), r = curRect(l)
+      setRect([p[0] - r[2] / 2, p[1] - r[3] / 2, r[2], r[3]])
+    }
+  }
+
+  function scaleRect(k) {
+    var l = lv(), r = curRect(l)
+    var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2
+    var w = Math.max(0.004, r[2] * k), h = Math.max(0.004, r[3] * k)
+    setRect([cx - w / 2, cy - h / 2, w, h])
+  }
+
+  function copy(text, tip) {
+    var done = function () { el.log.textContent = tip }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done)
+    else {
+      var ta = document.createElement('textarea')
+      ta.value = text; document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy') } catch (e) {}
+      ta.remove(); done()
+    }
+  }
+
+  el.stage.addEventListener('pointerdown', onDown)
+  el.stage.addEventListener('pointermove', onMove)
+  el.stage.addEventListener('pointerup', onUp)
+  el.stage.addEventListener('pointercancel', function () { S.dragFrom = null; render() })
+  el.chips.addEventListener('click', function (e) {
+    var b = e.target.closest('button')
+    if (!b) return
+    S.index = Number(b.getAttribute('data-i'))
+    S.dragFrom = null
+    render()
+  })
+  el.prev.addEventListener('click', function () { S.level = Math.max(1, S.level - 1); S.index = 0; load() })
+  el.next.addEventListener('click', function () { S.level = Math.min(levels.length, S.level + 1); S.index = 0; load() })
+  el.lv.addEventListener('change', function () { S.level = Math.max(1, Math.min(levels.length, Number(el.lv.value) || 1)); S.index = 0; load() })
+  el.showAll.addEventListener('click', function () { S.showAll = !S.showAll; el.showAll.className = S.showAll ? 'on' : ''; render() })
+  el.shrink.addEventListener('click', function () { scaleRect(0.9) })
+  el.grow.addEventListener('click', function () { scaleRect(1.1) })
+  el.reset.addEventListener('click', function () { delete S.rects[key(S.index)]; render() })
+  el.copy.addEventListener('click', function () {
+    copy(el.rectText.textContent, '已复制当前 rect，发给我就行')
+  })
+  el.copyAll.addEventListener('click', function () {
+    var lines = ['恐龙 找物坐标修正：']
+    Object.keys(S.rects).forEach(function (k) {
+      var p = k.split(':'), L = Number(p[0]), i = Number(p[1])
+      var l = levels.filter(function (x) { return x.level === L })[0]
+      lines.push('第' + L + '关 ' + nameOf(l.items[i], i) + ' rect=[' + S.rects[k].join(', ') + ']')
+    })
+    copy(lines.join('\n'), '已复制 ' + (lines.length - 1) + ' 条改动，发给我就行')
+  })
+
+  load()
+})()
+</script>
+</body>
+</html>
