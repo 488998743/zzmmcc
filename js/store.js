@@ -11,7 +11,7 @@
  * 这一次打开仍然能玩，只是关掉页面进度就没了。
  */
 (function () {
-  var KEY = 'vc_progress_v1'
+  var KEY = 'vc_progress_v2'
   var mem = {}
 
   var store = (function () {

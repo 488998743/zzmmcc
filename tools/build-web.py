@@ -22,7 +22,9 @@ WEB = os.path.dirname(HERE)
 ROOT = os.path.dirname(WEB)
 SRC = os.path.join(ROOT, 'miniprogram')
 
-PKGS = ['sp%d' % i for i in range(1, 9)]
+# 分包目录自动发现（sp1、sp2 … 以后加新分包不用改这里）
+PKGS = sorted([d for d in os.listdir(SRC) if re.fullmatch(r'sp\d+', d)],
+              key=lambda d: int(d[2:]))
 KINDS = [('pic', '.jpg'), ('hdr', '.jpg'), ('spr', '.png')]
 
 
