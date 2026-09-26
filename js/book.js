@@ -31,8 +31,8 @@
     pageW: 0, pageH: 0, anim: 0, animating: false
   }
   var el = {}
-  ;['stage', 'leafBack', 'leafFront', 'cast', 'flipLayer', 'hud', 'pageNo',
-    'btnPrev', 'btnNext', 'btnToc', 'overlay', 'frame', 'btnClose'].forEach(function (id) {
+  ;['stage', 'leafBack', 'leafFront', 'cast', 'flipLayer', 'hud', 'pageNo', 'prefetch',
+    'btnPrev', 'btnNext', 'btnToc'].forEach(function (id) {
     el[id] = document.getElementById(id)
   })
 
@@ -68,50 +68,6 @@
       '<div class="tocFoot">点任意一关直接翻到那一页</div></div>'
   }
 
-  /** 关卡页：标题故事条 + 画面 + 物品栏（物品栏里已找到的是金黄的） */
-  function faceLevel(lv) {
-    var found = {}
-    progOf(lv.level).forEach(function (i) { found[i] = 1 })
-    var spr = lv.spr
-    var sprUrl = 'assets/spr/dino/' + lv.page + '.png'
-    var n = lv.items.length
-    var total = n
-    var got = 0
-
-    function chip(it, i, boxH) {
-      var ic = it.icon, foundIt = !!found[i]
-      if (foundIt) got++
-      var w = Math.max(6, Math.round(boxH * ic[2] / ic[3]))
-      var k = boxH / ic[3]
-      var x = foundIt ? it.iconY[0] : ic[0]
-      var y = foundIt ? it.iconY[1] : ic[1]
-      return '<div class="chip' + (foundIt ? ' found' : '') + '">' +
-        '<div class="cico" style="width:' + w + 'px;height:' + boxH + 'px">' +
-        '<img src="' + sprUrl + '" alt="" style="width:' + spr.w * k + 'px;height:' + spr.h * k +
-        'px;margin-left:' + (-x * k) + 'px;margin-top:' + (-y * k) + 'px">' +
-        '</div>' + (it.name ? '<span class="cname">' + esc(it.name) + '</span>' : '') + '</div>'
-    }
-
-    var sb = Math.min(lv.sb || 0, n)
-    var side = ''
-    for (var i = 0; i < sb; i++) side += chip(lv.items[i], i, 30)
-    var bar = ''
-    for (var j = sb; j < n; j++) bar += chip(lv.items[j], j, 26)
-
-    return '<div class="face level' + (got >= total ? ' done' : '') + '">' +
-      '<div class="lvHead"><img src="assets/hdr/dino/' + lv.page + '.jpg" alt=""></div>' +
-      '<div class="lvBody">' +
-      '<div class="lvPicWrap"><div class="lvPic" style="aspect-ratio:' + lv.pic.w + ' / ' + lv.pic.h + '">' +
-      '<img src="assets/pic/dino/' + lv.page + '.jpg" alt="">' +
-      '<span class="lvBadge">' + esc(lv.name || '') + ' · 第 ' + lv.level + ' 关</span>' +
-      '<span class="lvStart">' + (got ? '已找到 ' + got + '/' + total : '点这里开始找') + '</span>' +
-      '</div></div>' +
-      (side ? '<div class="lvSide">' + side + '</div>' : '') +
-      '</div>' +
-      (bar ? '<div class="lvBar">' + bar + '</div>' : '') +
-      '</div>'
-  }
-
   /** 封底 */
   function faceBack() {
     var st = window.store ? store.bookStats('dino', LEVELS.length) : { done: 0, found: 0 }
@@ -127,11 +83,35 @@
       '</div></div>'
   }
 
+  /**
+   * 关卡页：直接把游戏页放进书页里（iframe 铺满整页），所以"翻到就能玩"。
+   * 它自己带顶栏（返回 / 故事 / 提示）和进度，返回 = 回目录，下一关 = 让书翻页。
+   */
+  function levelFrameHtml(lv) {
+    return '<iframe class="pageFrame" data-level="' + lv.level + '" title="第 ' + lv.level + ' 关" ' +
+      'src="play.html?level=' + lv.level + '&embed=1"></iframe>'
+  }
+
+  /** 翻页时那张纸的背面：空白纸 + 页码水印，和真书一样 */
+  function sheetHtml(pageIndex) {
+    var p = PAGES[pageIndex]
+    var label = ''
+    if (p.kind === 'level') label = '第 ' + p.lv.level + ' 关'
+    else if (p.kind === 'cover') label = '封面'
+    else if (p.kind === 'toc') label = '目录'
+    else label = '封底'
+    return '<div class="sheet">' +
+      '<div class="sheetPaper"></div>' +
+      '<div class="sheetNo">' + esc(label) + ' · ' + (pageIndex + 1) + '</div>' +
+      '<div class="sheetMark">恐龙找物</div>' +
+      '</div>'
+  }
+
   function faceHtml(page) {
     if (page.kind === 'cover') return faceCover()
     if (page.kind === 'toc') return faceToc()
     if (page.kind === 'back') return faceBack()
-    return faceLevel(page.lv)
+    return levelFrameHtml(page.lv)
   }
 
   function labelOf(page) {
@@ -142,9 +122,51 @@
   }
 
   /* ---------------------------------------------------------------- 静止页 */
+  /**
+   * 关卡页的 iframe 做一层缓存：来回翻页不用重新加载整关（图片、进度都还在）。
+   * 只留最近 FRAME_KEEP 个，多了把最旧的丢掉。
+   */
+  var FRAME_KEEP = 4
+  var frameCache = {}
+  var frameOrder = []
+
+  function getFrame(lv) {
+    var f = frameCache[lv.level]
+    if (!f) {
+      f = document.createElement('iframe')
+      f.className = 'pageFrame'
+      f.setAttribute('title', '第 ' + lv.level + ' 关')
+      f.src = 'play.html?level=' + lv.level + '&embed=1'
+      frameCache[lv.level] = f
+      frameOrder.push(lv.level)
+      while (frameOrder.length > FRAME_KEEP) {
+        var old = frameOrder.shift()
+        var of = frameCache[old]
+        if (of && of.parentNode) of.parentNode.removeChild(of)
+        delete frameCache[old]
+      }
+    }
+    return f
+  }
+
   function paintLeaf(leaf, page) {
-    leaf.innerHTML = page ? faceHtml(page) : ''
-    leaf.style.display = page ? 'block' : 'none'
+    if (!page) { leaf.innerHTML = ''; return }
+    if (page.kind === 'level') {
+      var f = getFrame(page.lv)
+      if (f.parentNode !== leaf) { leaf.innerHTML = ''; leaf.appendChild(f) }
+    } else {
+      leaf.innerHTML = faceHtml(page)
+    }
+  }
+
+  /** 提前把相邻两关的 iframe 挂到隐藏容器里加载好，翻过去不用等 */
+  function prefetchNeighbours() {
+    [S.index - 1, S.index + 1].forEach(function (i) {
+      var p = PAGES[i]
+      if (!p || p.kind !== 'level') return
+      var f = getFrame(p.lv)
+      if (!f.parentNode) el.prefetch.appendChild(f)
+    })
   }
 
   function renderResting() {
@@ -152,6 +174,7 @@
     el.leafFront.style.opacity = 1
     el.cast.style.opacity = 0
     updateHud()
+    prefetchNeighbours()
   }
 
   function updateHud() {
@@ -208,15 +231,15 @@
     S.dir = dir
     // 底下那页 = 目标页（翻的过程中逐渐露出来）
     paintLeaf(el.leafBack, PAGES[toIndex])
-    // 翻动的那一页 = 从当前页复制出来，切成条
-    var face = faceHtml(PAGES[fromIndex])
+    // 翻动的是这张纸的背面：空白纸 + 页码水印 —— 和真书一样，翻的时候看到的是纸背
+    var sheet = sheetHtml(fromIndex)
     var L = S.pageW / STRIPS
     var html = ''
     for (var i = 0; i < STRIPS; i++) {
       html += '<div class="strip" data-i="' + i + '" style="width:' + L + 'px;height:' + S.pageH + 'px">' +
         '<div class="shade"></div>' +
         '<div style="position:absolute;left:' + (-i * L) + 'px;top:0;width:' + S.pageW + 'px;height:' + S.pageH + 'px">' +
-        face + '</div></div>'
+        sheet + '</div></div>'
     }
     el.flipLayer.innerHTML = html
     el.flipLayer.style.visibility = 'visible'
@@ -298,9 +321,11 @@
       return 0
     }
     el.stage.addEventListener('pointerdown', function (e) {
-      if (S.animating || !el.overlay.hidden) return
-      if (isInteractive(e.target)) return
-      var zone = inZone(e.clientX)
+      if (S.animating) return
+      var grab = e.target.closest && e.target.closest('.edgeGrab')
+      var zone = 0
+      if (grab) zone = grab.classList.contains('right') ? 1 : -1
+      else if (PAGES[S.index].kind !== 'level' && !isInteractive(e.target)) zone = inZone(e.clientX)
       if (!zone) return
       // 边界：第一页不能再往回翻，最后一页不能再往前翻
       if (zone > 0 && S.index >= PAGES.length - 1) return
@@ -322,7 +347,10 @@
       var dx = (e.clientX - d.x0) * d.dir
       var p = Math.max(0, dx / S.pageW)
       var goOn = d.moved ? p > 0.28 : true     // 轻点 = 翻一页；拖动 = 过半才翻过去
-      if (!d.moved) S.suppressClick = true     // 轻点翻页之后别再顺手把游戏打开
+      if (!d.moved) {
+        S.suppressClick = true                 // 轻点翻页之后别再顺手触发页内点击
+        setTimeout(function () { S.suppressClick = false }, 260)
+      }
       if (goOn) {
         var t0 = performance.now()
         var p0 = p
@@ -347,27 +375,26 @@
     el.stage.addEventListener('pointercancel', release)
   }
 
-  /* ---------------------------------------------------------------- 游戏浮层 */
-  function openGame(level) {
-    el.frame.src = 'play.html?level=' + level + '&embed=1'
-    el.overlay.hidden = false
-  }
-  function closeGame() {
-    el.overlay.hidden = true
-    el.frame.src = 'about:blank'
-    // 进度可能变了：重画面向用户的那一页和目录
-    renderResting()
+  /* ---------------------------------------------------------------- 与游戏页通信 */
+  // 游戏页（iframe）在"返回"时发 toc、在"下一关"时发 next，书这边翻页。
+  // 注意：只认当前显示的那一页发来的消息 —— 预加载的相邻关也会发，不能让它把书带跑。
+  function fromCurrentFrame(e) {
+    var f = el.leafFront.querySelector('iframe')
+    return !!(f && e.source === f.contentWindow)
   }
 
   window.addEventListener('message', function (e) {
+    if (!fromCurrentFrame(e)) return
     var d = e.data || {}
-    if (d.type === 'close') closeGame()
-    else if (d.type === 'level') {
-      // 游戏里翻到了别的关，书也跟着翻到那一页
-      var i = PAGES.findIndex(function (p) { return p.kind === 'level' && p.lv.level === d.level })
-      if (i >= 0 && i !== S.index) { S.index = i; renderResting() }
-    } else if (d.type === 'progress') {
-      updateHud()
+    if (d.type === 'toc') {
+      var i = PAGES.findIndex(function (p) { return p.kind === 'toc' })
+      if (i >= 0) jumpTo(i)
+    } else if (d.type === 'next') {
+      var nxt = PAGES[S.index + 1]
+      if (nxt) animFlip(S.index, S.index + 1, 1)
+    } else if (d.type === 'level') {
+      var k = PAGES.findIndex(function (p) { return p.kind === 'level' && p.lv.level === d.level })
+      if (k >= 0 && k !== S.index) { S.index = k; renderResting() }
     }
   })
 
@@ -379,18 +406,13 @@
       var i = PAGES.findIndex(function (p) { return p.kind === 'toc' })
       jumpTo(i)
     })
-    el.btnClose && el.btnClose.addEventListener('click', closeGame)
     document.addEventListener('keydown', function (e) {
-      if (!el.overlay.hidden) {
-        if (e.key === 'Escape') closeGame()
-        return
-      }
-      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); turn(1) }
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); turn(1) }
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); turn(-1) }
     })
-    // 页内点击：目录跳关、关卡页开游戏、封底按钮
+    // 页内点击：目录跳关、封底按钮（关卡页里的点击归游戏自己管）
     el.stage.addEventListener('click', function (e) {
-      if (S.animating || !el.overlay.hidden) return
+      if (S.animating) return
       if (S.suppressClick) { S.suppressClick = false; return }
       var t = e.target
       var tocItem = t.closest && t.closest('.tocItem')
@@ -401,12 +423,8 @@
         return
       }
       var act = t.getAttribute && t.getAttribute('data-act')
-      if (act === 'grid') { location.href = 'index.html'; return }
-      if (act === 'about') { location.href = 'about.html'; return }
-      var page = PAGES[S.index]
-      var r = el.stage.getBoundingClientRect()
-      var zone = e.clientX > r.left + r.width * 0.86 || e.clientX < r.left + r.width * 0.14
-      if (page.kind === 'level' && !zone && !isInteractive(t)) openGame(page.lv.level)
+      if (act === 'grid') location.href = 'index.html'
+      if (act === 'about') location.href = 'about.html'
     })
     var rt = 0
     window.addEventListener('resize', function () {

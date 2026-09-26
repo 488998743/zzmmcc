@@ -226,59 +226,75 @@ body.bookBody {
 .hud button:active { transform: scale(.96); }
 .hud .pageNo { font-variant-numeric: tabular-nums; opacity: .85; min-width: 62px; text-align: center; }
 
-/* 左右翻页热区（只是视觉提示；实际手势在 stage 上判定，避免抢页内点击） */
-.edgeZone {
+/* 左右贴边的翻页抓手（十几像素宽，压在游戏页上也只占一点点边距） */
+.edgeGrab {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 16%;
-  z-index: 5;
-  pointer-events: none;
+  width: 18px;
+  z-index: 6;
+  cursor: pointer;
 }
-.edgeZone.left { left: 0; }
-.edgeZone.right { right: 0; }
-.edgeZone::after {
+.edgeGrab.left { left: 0; }
+.edgeGrab.right { right: 0; }
+.edgeGrab::after {
   content: '';
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 26px;
-  height: 40px;
+  width: 22px;
+  height: 36px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .14);
   opacity: 0;
   transition: opacity .2s;
 }
-.edgeZone.left::after { left: 2px; }
-.edgeZone.right::after { right: 2px; }
-.stage:hover .edgeZone::after { opacity: .5; }
+.edgeGrab.left::after { left: 1px; }
+.edgeGrab.right::after { right: 1px; }
+.stage:hover .edgeGrab::after { opacity: .55; }
 
-/* ---------------------------------------------------------------- 游戏浮层 */
-.gameOverlay {
-  position: fixed;
-  inset: 0;
-  background: #f3efe6;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-}
-.gameOverlay[hidden] { display: none; }
-.gameOverlay iframe { flex: 1; border: 0; width: 100%; height: 100%; }
-.closeGame {
+/* 关卡页：把游戏页整页嵌进书页里（所以翻到就能直接玩） */
+.pageFrame {
   position: absolute;
-  right: 10px;
-  top: 10px;
-  z-index: 5;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   border: 0;
-  background: rgba(255, 255, 255, .92);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
-  font-size: 18px;
-  line-height: 1;
-  color: #4a4038;
-  cursor: pointer;
+  display: block;
+  background: #f3efe6;
+}
+
+/* 翻页时那张纸的背面：空白纸 + 页码水印 */
+.sheet {
+  position: absolute;
+  inset: 0;
+  background: #fffdf7;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(246, 240, 226, .9));
+  overflow: hidden;
+}
+.sheetPaper {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(105deg, rgba(190, 170, 130, .06) 0%, rgba(190, 170, 130, 0) 30%),
+    repeating-linear-gradient(90deg, rgba(160, 140, 105, .05) 0 1px, rgba(0, 0, 0, 0) 1px 7px);
+}
+.sheetNo {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  font-size: 11px;
+  color: #b9ac93;
+  letter-spacing: 1px;
+}
+.sheetMark {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  font-size: 11px;
+  color: #cfc4ae;
+  letter-spacing: 3px;
 }
 
 /* 竖屏窄屏：HUD 更紧凑 */

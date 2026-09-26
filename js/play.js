@@ -596,12 +596,12 @@
       util.toast('已经是最后一关', 1200)
       return
     }
-    if (EMBED) { location.href = 'play.html?level=' + n + '&embed=1'; return }
+    if (EMBED) { post({ type: 'next', level: S.level }); return }   // 书里打开时：让书翻到下一关
     location.href = 'play.html?level=' + n
   }
 
   function backHome() {
-    if (EMBED) { post({ type: 'close' }); return }   // 书里打开时：关掉浮层回到书页
+    if (EMBED) { post({ type: 'toc' }); return }   // 书里打开时：回到目录页
     var ref = document.referrer || ''
     if (ref && ref.indexOf(location.origin) === 0 && history.length > 1) history.back()
     else location.href = 'index.html'

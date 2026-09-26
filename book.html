@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>恐龙找物 · 翻书版</title>
 <link rel="stylesheet" href="css/app.css?v=20260925">
-<link rel="stylesheet" href="css/book.css?v=20260925">
+<link rel="stylesheet" href="css/book.css?v=20260926">
 </head>
 <body class="bookBody">
 
@@ -15,8 +15,9 @@
     <div class="leaf" id="leafFront"></div>
     <div class="castShadow" id="cast"></div>
     <div id="flipLayer"></div>
-    <div class="edgeZone left" id="zoneL"></div>
-    <div class="edgeZone right" id="zoneR"></div>
+    <!-- 左右贴边的翻页抓手：压在游戏页上面也能拖，只占十几像素，不挡物品栏 -->
+    <div class="edgeGrab left" id="zoneL"></div>
+    <div class="edgeGrab right" id="zoneR"></div>
   </div>
   <div class="hud" id="hud">
     <button id="btnPrev">‹ 上一页</button>
@@ -26,15 +27,13 @@
   </div>
 </div>
 
-<div class="gameOverlay" id="overlay" hidden>
-  <!-- 关掉浮层：游戏里的「返回」按钮或 Esc（不放悬浮按钮，免得压住游戏自己的「提示」） -->
-  <iframe id="frame" title="关卡"></iframe>
-</div>
+<!-- 相邻关的 iframe 先在这儿加载好，翻过去就不用等 -->
+<div id="prefetch" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none"></div>
 
 <script src="js/util.js?v=20260925"></script>
 <script src="js/store.js?v=20260925"></script>
 <!-- 关卡数据按分钟时间戳加载，改了数据刷新就能看到 -->
 <script>document.write('<script src="js/data.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>')</script>
-<script src="js/book.js?v=20260925"></script>
+<script src="js/book.js?v=20260926"></script>
 </body>
 </html>
