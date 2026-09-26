@@ -1,0 +1,288 @@
+/* 翻书模式：封面 / 目录 / 关卡页 / 封底，纸页卷曲翻页
+   页面尺寸按"真实书的比例"（587x791 ≈ 0.742）等比缩放到屏幕里 */
+
+body.bookBody {
+  margin: 0;
+  height: 100%;
+  background: #2b2620 radial-gradient(circle at 50% 30%, #4a4139 0%, #241f1a 70%);
+  overflow: hidden;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #33291f;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bookWrap {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 8px 0;
+  box-sizing: border-box;
+}
+
+/* 书页舞台：透视 + 裁掉翻出去的部分 */
+.stage {
+  position: relative;
+  perspective: 2200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  flex: none;
+}
+
+.leaf {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  background: #fffdf7;
+  border-radius: 3px 6px 6px 3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(120, 100, 70, .12);
+  backface-visibility: hidden;
+}
+
+/* 纸页纹理 / 靠近书脊的暗影 */
+.leaf::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, rgba(120, 95, 60, .16), rgba(120, 95, 60, 0) 14%),
+    linear-gradient(to right, rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 30%);
+}
+
+#flipLayer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-style: preserve-3d;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  transform-origin: 50% 50%;
+}
+
+.strip .shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 页面内容统一放在 .face 里 */
+.face {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #fffdf7;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- 封面 / 封底 */
+.face.cover { padding: 0; background: #e9d9a8; }
+.face.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.face.back { align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 24px; }
+.face.back .bt { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+.face.back .bs { font-size: 13px; color: #8b7f6c; line-height: 1.8; }
+
+/* ---------------------------------------------------------------- 目录页 */
+.face.toc { padding: 14px 12px 10px; }
+.tocHead { flex: none; text-align: center; margin-bottom: 8px; }
+.tocHead .t1 { font-size: 19px; font-weight: 700; letter-spacing: 3px; }
+.tocHead .t2 { font-size: 11px; color: #9c8f79; margin-top: 3px; letter-spacing: 1px; }
+.tocCols {
+  flex: 1;
+  min-height: 0;
+  column-count: 2;
+  column-gap: 12px;
+  overflow: hidden;
+}
+.tocItem {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  padding: 1.5px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  break-inside: avoid;
+}
+.tocItem .no { flex: none; width: 20px; text-align: right; color: #a8977c; font-variant-numeric: tabular-nums; }
+.tocItem .nm { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tocItem .pg { flex: none; color: #b3a68f; font-variant-numeric: tabular-nums; }
+.tocItem.done .nm { color: #c99a12; font-weight: 700; }
+.tocItem.done .pg { color: #c99a12; }
+.tocItem.started .nm { color: #7d8a5f; }
+.tocItem:hover { background: rgba(180, 150, 90, .16); }
+.tocFoot { flex: none; text-align: center; font-size: 10px; color: #b3a68f; padding-top: 6px; }
+
+/* ---------------------------------------------------------------- 关卡页 */
+.face.level { padding: 0; }
+.lvHead { flex: none; background: #fff; }
+.lvHead img { display: block; width: 100%; }
+.lvBody { flex: 1; min-height: 0; display: flex; padding: 6px 6px 0; gap: 5px; }
+.lvPicWrap { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+.lvPic {
+  border: 2px solid rgba(88, 126, 84, .75);
+  border-radius: 3px;
+  background: #fff;
+  overflow: hidden;
+  position: relative;
+}
+.lvPic img { display: block; width: 100%; height: 100%; }
+.lvSide { flex: none; display: flex; flex-direction: column; gap: 3px; }
+.lvSide .chip, .lvBar .chip {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 4px;
+  padding: 2px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.chip .cico { position: relative; overflow: hidden; }
+.chip .cico img { display: block; }
+.chip .cname { font-size: 9px; color: #6d8a63; white-space: nowrap; }
+.chip.found { background: linear-gradient(160deg, #fff3c4, #ffe08a); border-color: #ffc400; }
+.chip.found .cname { color: #b8860b; font-weight: 700; }
+.lvBar {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 5px 6px 6px;
+  border-top: 1px solid rgba(104, 141, 99, .45);
+  margin: 5px 6px 0;
+}
+.lvBadge {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  background: rgba(255, 255, 255, .92);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #6b5b3e;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .12);
+}
+.lvStart {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: #ffb400;
+  color: #3a2c00;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+}
+.face.level.done .lvBadge { background: #ffe9a8; }
+
+/* 翻页时盖在被翻开那页上的阴影 */
+.castShadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(40, 26, 10, .38), rgba(40, 26, 10, 0) 26%);
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------- HUD */
+.hud {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px 12px;
+  color: #e8dcc6;
+  font-size: 13px;
+}
+.hud button {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .08);
+  color: #f0e6d2;
+  cursor: pointer;
+}
+.hud button:active { transform: scale(.96); }
+.hud .pageNo { font-variant-numeric: tabular-nums; opacity: .85; min-width: 62px; text-align: center; }
+
+/* 左右翻页热区（只是视觉提示；实际手势在 stage 上判定，避免抢页内点击） */
+.edgeZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16%;
+  z-index: 5;
+  pointer-events: none;
+}
+.edgeZone.left { left: 0; }
+.edgeZone.right { right: 0; }
+.edgeZone::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.edgeZone.left::after { left: 2px; }
+.edgeZone.right::after { right: 2px; }
+.stage:hover .edgeZone::after { opacity: .5; }
+
+/* ---------------------------------------------------------------- 游戏浮层 */
+.gameOverlay {
+  position: fixed;
+  inset: 0;
+  background: #f3efe6;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+}
+.gameOverlay[hidden] { display: none; }
+.gameOverlay iframe { flex: 1; border: 0; width: 100%; height: 100%; }
+.closeGame {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+  font-size: 18px;
+  line-height: 1;
+  color: #4a4038;
+  cursor: pointer;
+}
+
+/* 竖屏窄屏：HUD 更紧凑 */
+@media (max-width: 420px) {
+  .tocItem { font-size: 11px; }
+  .hud { font-size: 12px; padding: 8px 4px 10px; }
+}

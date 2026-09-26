@@ -46,6 +46,7 @@
     btnContinue.textContent = last ? ('继续上次：第 ' + last.level + ' 关') : '开始第 1 关'
     var goLevel = last ? last.level : 1
     btnContinue.addEventListener('click', function () { play(goLevel) })
+    $('btnBook').addEventListener('click', function () { location.href = 'book.html?level=' + goLevel })
     $('btnAbout').addEventListener('click', function () { location.href = 'about.html' })
 
     var grid = $('grid')

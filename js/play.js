@@ -11,6 +11,13 @@
 (function () {
   var BOOK_ID = 'dino'
 
+  // 嵌在翻书模式里（play.html?level=N&embed=1）时：不自己跳页，改成通知外面的书
+  var EMBED = util.param('embed', '') === '1'
+  function post(msg) {
+    if (!EMBED) return
+    try { parent.postMessage(msg, '*') } catch (e) {}
+  }
+
   var S = {
     rpx: 1, winW: 0, winH: 0, barH: 0, sideW: 0, pad: 0,
     level: 1, bookName: '恐龙', maxLevel: 0, levels: [], lv: null,
@@ -349,6 +356,7 @@
     renderHots()
     el.pulse.hidden = true
     updateProgress()
+    post({ type: 'level', level: S.level })
   }
 
   /**
@@ -493,6 +501,7 @@
     store.markFound(BOOK_ID, S.level, index, S.total)
     util.vibrate('medium')
     var allDone = updateProgress()
+    post({ type: 'progress', level: S.level })
     if (allDone) util.toast('全部找到啦！', 1500)
   }
 
@@ -587,10 +596,12 @@
       util.toast('已经是最后一关', 1200)
       return
     }
+    if (EMBED) { location.href = 'play.html?level=' + n + '&embed=1'; return }
     location.href = 'play.html?level=' + n
   }
 
   function backHome() {
+    if (EMBED) { post({ type: 'close' }); return }   // 书里打开时：关掉浮层回到书页
     var ref = document.referrer || ''
     if (ref && ref.indexOf(location.origin) === 0 && history.length > 1) history.back()
     else location.href = 'index.html'
