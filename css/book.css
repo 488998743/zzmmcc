@@ -106,24 +106,26 @@ body.bookBody {
 .tocCols {
   flex: 1;
   min-height: 0;
-  column-count: 2;
-  column-gap: 12px;
-  overflow: hidden;
+  /* 60 关分三列；万一屏特别小，允许在页内滚动，绝不把后面的关卡藏掉 */
+  column-count: 3;
+  column-gap: 8px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .tocItem {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-  font-size: 11.5px;
-  line-height: 1.5;
-  padding: 1.5px 2px;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1.42;
+  padding: 1px 2px;
   border-radius: 4px;
   cursor: pointer;
   break-inside: avoid;
 }
-.tocItem .no { flex: none; width: 20px; text-align: right; color: #a8977c; font-variant-numeric: tabular-nums; }
+.tocItem .no { flex: none; width: 17px; text-align: right; color: #a8977c; font-variant-numeric: tabular-nums; }
 .tocItem .nm { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.tocItem .pg { flex: none; color: #b3a68f; font-variant-numeric: tabular-nums; }
+.tocItem .pg { flex: none; font-size: 10px; color: #b3a68f; font-variant-numeric: tabular-nums; }
 .tocItem.done .nm { color: #c99a12; font-weight: 700; }
 .tocItem.done .pg { color: #c99a12; }
 .tocItem.started .nm { color: #7d8a5f; }
@@ -299,6 +301,7 @@ body.bookBody {
 
 /* 竖屏窄屏：HUD 更紧凑 */
 @media (max-width: 420px) {
-  .tocItem { font-size: 11px; }
+  .tocItem { font-size: 10.5px; }
+  .tocItem .pg { font-size: 9.5px; }
   .hud { font-size: 12px; padding: 8px 4px 10px; }
 }
