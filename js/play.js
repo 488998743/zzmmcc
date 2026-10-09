@@ -18,10 +18,14 @@
     try { parent.postMessage(msg, '*') } catch (e) {}
   }
 
+  // 每关三颗心：点错一次掉一颗，掉光了这一轮就不能再点了（防止狂点过关）
+  var MAX_HEARTS = 3
+
   var S = {
     rpx: 1, winW: 0, winH: 0, barH: 0, sideW: 0, pad: 0,
     level: 1, bookName: '恐龙', maxLevel: 0, levels: [], lv: null,
     cards: [], rows: [], found: {}, total: 0,
+    hearts: MAX_HEARTS, dead: false,
     nameFs: 14, nameH: 20, box: { left: 0, top: 0, width: 0, height: 0 }, stageH: 200
   }
 
@@ -44,6 +48,7 @@
       board: $('board'), picbox: $('picbox'), picimg: $('picimg'),
       hots: $('hots'), pulse: $('pulse'), miss: $('miss'), sidebar: $('sidebar'),
       footblock: $('footblock'), done: $('done'), doneSub: $('doneSub'),
+      hearts: $('hearts'), dead: $('dead'), deadSub: $('deadSub'), retry: $('btnRetry'), leave: $('btnLeave'),
       story: $('story'), storyImg: $('storyImg'), back: $('btnBack')
     }
 
@@ -83,6 +88,10 @@
     var prog = store.getLevel(BOOK_ID, S.level)
     var found = (prog && prog.found) || []
     for (var j = 0; j < found.length; j++) S.found[found[j]] = 1
+
+    // 每次进入这一关都是满血
+    S.hearts = MAX_HEARTS
+    S.dead = false
 
     render()
   }
@@ -354,6 +363,7 @@
     S.spr = spr
 
     renderHots()
+    renderHearts()
     el.pulse.hidden = true
     updateProgress()
     post({ type: 'level', level: S.level })
@@ -444,15 +454,33 @@
   }
 
   function onTapPic(e) {
-    if (el.game.hidden || !el.done.hidden) return
+    if (el.game.hidden || !el.done.hidden || S.dead) return
     var r = picRect()
     if (!r.width || !r.height) return
     var nx = (e.clientX - r.left) / r.width
     var ny = (e.clientY - r.top) / r.height
     if (nx < -0.05 || nx > 1.05 || ny < -0.05 || ny > 1.05) return
     var hit = hitTest(nx, ny)
-    if (hit) markFound(hit.index)
-    else missAt(e.clientX - r.left, e.clientY - r.top)
+    if (hit) {
+      markFound(hit.index)
+      return
+    }
+    // 点在"已经找到"的物品上不算点错（免得手滑白掉一颗心）
+    if (tappedFound(nx, ny)) return
+    missAt(e.clientX - r.left, e.clientY - r.top)
+    loseHeart()
+  }
+
+  /** 这一下有没有点在已经找到的物品上 */
+  function tappedFound(nx, ny) {
+    for (var i = 0; i < S.cards.length; i++) {
+      var it = S.cards[i]
+      if (!it.found || !it.rect) continue
+      var p = Math.max(0.010, Math.min(it.rect[2], it.rect[3]) * 0.14)
+      if (nx >= it.rect[0] - p && nx <= it.rect[0] + it.rect[2] + p &&
+          ny >= it.rect[1] - p && ny <= it.rect[1] + it.rect[3] + p) return true
+    }
+    return false
   }
 
   function hitTest(nx, ny) {
@@ -490,10 +518,68 @@
     missAt._t = setTimeout(function () { el.miss.hidden = true }, 420)
   }
 
+  /* ---------------------------------------------------------------- 血量 */
+  /** 三颗心画在画面左上角 */
+  function renderHearts() {
+    if (!el.hearts) return
+    var html = ''
+    for (var i = 0; i < MAX_HEARTS; i++) {
+      html += '<span class="heart' + (i < S.hearts ? '' : ' lost') + '">♥</span>'
+    }
+    el.hearts.innerHTML = html
+  }
+
+  /** 点错掉一颗心；掉光这一轮就结束 */
+  function loseHeart() {
+    if (S.dead) return
+    S.hearts--
+    renderHearts()
+    if (el.hearts) {
+      el.hearts.classList.remove('hit')
+      void el.hearts.offsetWidth       // 强制重排，让动画能重播
+      el.hearts.classList.add('hit')
+      clearTimeout(loseHeart._t)
+      loseHeart._t = setTimeout(function () { el.hearts.classList.remove('hit') }, 380)
+    }
+    if (S.hearts <= 0) gameOver()
+  }
+
+  /**
+   * 心掉光了 = 本关失败：这一轮结束、本关已找到的物品一并清空
+   * （这样"乱点"就没法把一关刷过去；想接着玩就再来一次，心回到三颗）
+   */
+  function gameOver() {
+    S.dead = true
+    var got = 0
+    for (var i = 0; i < S.cards.length; i++) if (S.cards[i].found) got++
+    el.deadSub.textContent = '第 ' + S.level + ' 关 · 已找到 ' + got + '/' + S.total
+    // 清空本关进度
+    store.resetLevel(BOOK_ID, S.level)
+    S.found = {}
+    for (var j = 0; j < S.cards.length; j++) S.cards[j].found = false
+    renderHots()
+    updateProgress()
+    post({ type: 'progress', level: S.level })
+    el.dead.hidden = false
+    util.vibrate('medium')
+  }
+
+  /** 失败后重来：清空本关、心回到三颗 */
+  function retryLevel() {
+    store.resetLevel(BOOK_ID, S.level)
+    S.found = {}
+    for (var i = 0; i < S.cards.length; i++) S.cards[i].found = false
+    S.hearts = MAX_HEARTS
+    S.dead = false
+    el.dead.hidden = true
+    el.done.hidden = true
+    el.pulse.hidden = true
+    render()
+  }
+
   function markFound(index) {
     var o = S.cards[index]
-    if (!o || o.found) return
-    S.found[index] = 1
+    if (!o || o.found) return    S.found[index] = 1
     o.found = true
     updateCell(index)
     renderHots()
@@ -544,7 +630,7 @@
   /** 长按卡片：万一某个热区不准，也能直接算找到 */
   function askDirect(i) {
     var it = S.cards[i]
-    if (!it || it.found) return
+    if (!it || it.found || S.dead) return
     util.confirmDialog({
       title: '直接算找到？',
       body: '如果怎么都点不中这个物品，可以把它标记成已找到。',
@@ -556,6 +642,7 @@
 
   /* ---------------------------------------------------------------- 提示 / 故事 / 通关 */
   function showHint() {
+    if (S.dead) return
     for (var i = 0; i < S.cards.length; i++) {
       var it = S.cards[i]
       if (it.found || !it.rect) continue
@@ -581,13 +668,9 @@
     el.story.hidden = v === undefined ? !el.story.hidden : !v
   }
 
+  /** 通关浮层里的「再玩一次」= 清空本关重来（和血量用尽后的重来是同一条路） */
   function replay() {
-    store.resetLevel(BOOK_ID, S.level)
-    S.found = {}
-    for (var i = 0; i < S.cards.length; i++) S.cards[i].found = false
-    el.done.hidden = true
-    el.pulse.hidden = true
-    render()
+    retryLevel()
   }
 
   function nextLevel() {
@@ -633,6 +716,8 @@
     $('btnReplay').addEventListener('click', replay)
     $('btnNext').addEventListener('click', nextLevel)
     $('btnHome').addEventListener('click', function () { location.href = 'index.html' })
+    el.retry.addEventListener('click', retryLevel)
+    el.leave.addEventListener('click', backHome)
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {

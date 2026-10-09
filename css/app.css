@@ -368,6 +368,37 @@ body {
 
 .hot img { display: block; }
 
+/* 三颗心：放在顶栏里（不压住要找物的图），点错一次掉一颗 */
+.hearts {
+  flex: none;
+  display: flex;
+  gap: calc(2 * var(--rpx));
+  font-size: calc(22 * var(--rpx));
+  line-height: 1;
+  color: #e2504a;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.hearts .heart {
+  transition: transform 0.2s ease, opacity 0.2s ease, color 0.2s ease;
+}
+
+.hearts .heart.lost {
+  color: #cfc7bd;
+  transform: scale(0.86);
+}
+
+.hearts.hit .heart:not(.lost) {
+  animation: heartLost 0.34s ease;
+}
+
+@keyframes heartLost {
+  0% { transform: scale(1.5); }
+  60% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
 .pulse {
   position: absolute;
   transform: translate(-50%, -50%);
