@@ -545,6 +545,16 @@ body {
 }
 
 .panel-emoji { font-size: calc(76 * var(--rpx)); }
+
+/* 失败面板顶上那张表情（"你是个乐乐"猫） */
+.panel-emoji-img {
+  display: block;
+  margin: 0 auto;
+  width: calc(210 * var(--rpx));
+  max-width: 46%;
+  border-radius: calc(18 * var(--rpx));
+  box-shadow: 0 calc(4 * var(--rpx)) calc(14 * var(--rpx)) rgba(0, 0, 0, 0.12);
+}
 .panel-title { font-size: calc(40 * var(--rpx)); font-weight: 700; margin-top: calc(10 * var(--rpx)); }
 .panel-sub { font-size: calc(26 * var(--rpx)); color: var(--muted); margin-top: calc(8 * var(--rpx)); }
 
