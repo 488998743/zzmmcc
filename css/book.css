@@ -1,10 +1,11 @@
 /* 翻书模式：封面 / 目录 / 关卡页 / 封底，纸页卷曲翻页
-   页面尺寸按"真实书的比例"（587x791 ≈ 0.742）等比缩放到屏幕里 */
+   页面尺寸按"真实书的比例"（587x791 ≈ 0.742）等比缩放到屏幕里
+   背景统一纯白（原来是深色木桌 + 米色纸） */
 
 body.bookBody {
   margin: 0;
   height: 100%;
-  background: #2b2620 radial-gradient(circle at 50% 30%, #4a4139 0%, #241f1a 70%);
+  background: #fff;
   overflow: hidden;
   font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   color: #33291f;
@@ -36,20 +37,20 @@ body.bookBody {
   left: 0;
   top: 0;
   overflow: hidden;
-  background: #fffdf7;
+  background: #fff;
   border-radius: 3px 6px 6px 3px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(120, 100, 70, .12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(0, 0, 0, .07);
   backface-visibility: hidden;
 }
 
-/* 纸页纹理 / 靠近书脊的暗影 */
+/* 纸页纹理 / 靠近书脊的暗影（背景全白之后改成中性的灰，不再带纸色） */
 .leaf::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(to right, rgba(120, 95, 60, .16), rgba(120, 95, 60, 0) 14%),
+    linear-gradient(to right, rgba(0, 0, 0, .05), rgba(0, 0, 0, 0) 14%),
     linear-gradient(to right, rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 30%);
 }
 
@@ -83,7 +84,7 @@ body.bookBody {
   top: 0;
   width: 100%;
   height: 100%;
-  background: #fffdf7;
+  background: #fff;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -91,7 +92,7 @@ body.bookBody {
 }
 
 /* ---------------------------------------------------------------- 封面 / 封底 */
-.face.cover { padding: 0; background: #e9d9a8; }
+.face.cover { padding: 0; background: #fff; }
 .face.cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .face.back { align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 24px; }
@@ -129,7 +130,7 @@ body.bookBody {
 .tocItem.done .nm { color: #c99a12; font-weight: 700; }
 .tocItem.done .pg { color: #c99a12; }
 .tocItem.started .nm { color: #7d8a5f; }
-.tocItem:hover { background: rgba(180, 150, 90, .16); }
+.tocItem:hover { background: rgba(0, 0, 0, .05); }
 .tocFoot { flex: none; text-align: center; font-size: 10px; color: #b3a68f; padding-top: 6px; }
 
 /* ---------------------------------------------------------------- 关卡页 */
@@ -201,7 +202,7 @@ body.bookBody {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(to right, rgba(40, 26, 10, .38), rgba(40, 26, 10, 0) 26%);
+  background: linear-gradient(to right, rgba(0, 0, 0, .22), rgba(0, 0, 0, 0) 26%);
   opacity: 0;
 }
 
@@ -212,7 +213,7 @@ body.bookBody {
   align-items: center;
   gap: 10px;
   padding: 10px 6px 12px;
-  color: #e8dcc6;
+  color: #5c5866;   /* 背景改成白色之后，HUD 也从浅色改成深色 */
   font-size: 13px;
 }
 .hud button {
@@ -220,9 +221,9 @@ body.bookBody {
   font-size: 13px;
   padding: 5px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, .22);
-  background: rgba(255, 255, 255, .08);
-  color: #f0e6d2;
+  border: 1px solid rgba(0, 0, 0, .14);
+  background: rgba(0, 0, 0, .04);
+  color: #46424f;
   cursor: pointer;
 }
 .hud button:active { transform: scale(.96); }
@@ -247,7 +248,8 @@ body.bookBody {
   width: 22px;
   height: 36px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, .14);
+  /* 白底上白色抓手看不见了，改成浅灰 */
+  background: rgba(0, 0, 0, .14);
   opacity: 0;
   transition: opacity .2s;
 }
@@ -264,23 +266,36 @@ body.bookBody {
   height: 100%;
   border: 0;
   display: block;
-  background: #f3efe6;
+  background: #fff;
 }
 
 /* 翻页时那张纸的背面：空白纸 + 页码水印 */
 .sheet {
   position: absolute;
   inset: 0;
-  background: #fffdf7;
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(246, 240, 226, .9));
+  background: #fff;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .9));
   overflow: hidden;
 }
 .sheetPaper {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(105deg, rgba(190, 170, 130, .06) 0%, rgba(190, 170, 130, 0) 30%),
-    repeating-linear-gradient(90deg, rgba(160, 140, 105, .05) 0 1px, rgba(0, 0, 0, 0) 1px 7px);
+}
+.sheetNo {
+  position: absolute;
+  left: 18px;
+  bottom: 14px;
+  font-size: 11px;
+  color: #b9ac93;
+  letter-spacing: 1px;
+}
+.sheetMark {
+  position: absolute;
+  right: 18px;
+  bottom: 14px;
+  font-size: 11px;
+  color: #cfc4ae;
+  letter-spacing: 3px;
 }
 .sheetNo {
   position: absolute;

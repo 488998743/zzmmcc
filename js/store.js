@@ -1,5 +1,5 @@
 /**
- * 进度存储：和小程序版 utils/store.js 的结构、键名完全一致，
+ * 进度存储：和小程序版 utils/store.js 的结构完全一致，
  * 只是把 wx.setStorageSync 换成了 localStorage —— 随时退出都会保留。
  *
  * {
@@ -7,11 +7,15 @@
  *   books: { [bookId]: { [level]: { found: [序号...], total: n, done: bool, ts: 时间戳 } } }
  * }
  *
+ * 键名带 _v3：网页版现在只保留 10 关、关卡号重排过（原来的第 7 关现在是第 1 关），
+ * 旧键里的 60 关进度按关卡号读会张冠李戴（首页会显示"已通关 12 / 10 关"），
+ * 所以直接换键名，老进度留在旧键里不动。
+ *
  * localStorage 不可用时（某些浏览器在 file:// 下会禁用）退回到内存存储：
  * 这一次打开仍然能玩，只是关掉页面进度就没了。
  */
 (function () {
-  var KEY = 'vc_progress_v2'
+  var KEY = 'vc_progress_v3'
   var mem = {}
 
   var store = (function () {

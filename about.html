@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>玩法说明 · 恐龙找物</title>
-<link rel="stylesheet" href="css/app.css?v=20260928">
+<link rel="stylesheet" href="css/app.css?v=20261014">
 <script>
 document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.innerWidth, 900) / 750) + 'px');
 </script>
@@ -28,17 +28,19 @@ document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.
 
     <div class="title-lg mt">关卡资源</div>
     <div class="card box">
-      <div class="li">《恐龙》共 <span id="total">54</span> 关，图片就在 <kbd>assets/</kbd> 目录里，不用联网、不用服务器。</div>
+      <div class="li">网页版保留 <span id="total">10</span> 关（按知名度挑的顶级恐龙，原书 60 关里的这 10 关），
+        图片就在 <kbd>assets/</kbd> 目录里，不用联网、不用服务器。</div>
       <div class="li tip">
         小程序版把图片按分包（sp1…sp8）打包，那是微信 2MB 包体限制逼出来的；
         网页没有这个限制，所以这里是平铺的 <kbd>assets/pic|hdr|spr/dino/&lt;页号&gt;.jpg|png</kbd>。
-        素材重新生成后跑一次 <kbd>python tools/build-web.py</kbd> 即可同步关卡数据和图片。
+        保留哪几关由 <kbd>tools/build-web.py</kbd> 顶部的名单决定，改完跑一次
+        <kbd>python tools/build-web.py</kbd> 即可重新同步数据和图片。
       </div>
     </div>
 
     <div class="title-lg mt">进度</div>
     <div class="card box">
-      <div class="li small">存在浏览器的 localStorage（键名 <kbd>vc_progress_v2</kbd>），和小程序版的进度不通用。</div>
+      <div class="li small">存在浏览器的 localStorage（键名 <kbd>vc_progress_v3</kbd>），和小程序版的进度不通用。</div>
       <div class="row">
         <button class="btn ghost small" id="btnReset">清空所有进度</button>
       </div>
@@ -53,9 +55,9 @@ document.documentElement.style.setProperty('--rpx', Math.min(1, Math.min(window.
 </div>
 
 <script src="js/util.js?v=20260925"></script>
-<script src="js/store.js?v=20260925"></script>
+<script src="js/store.js?v=20261014"></script>
 <!-- 关卡数据按分钟时间戳加载：手工修正了某个物品的位置之后立刻生效，不会被浏览器缓存卡住 -->
 <script>document.write('<script src="js/data.js?t=' + Math.floor(Date.now() / 60000) + '"><\/script>')</script>
-<script src="js/about.js?v=20260925"></script>
+<script src="js/about.js?v=20261014"></script>
 </body>
 </html>

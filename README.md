@@ -1,7 +1,11 @@
 # 恐龙 · 找物挑战（网页版）
 
-小程序版（`../miniprogram/`）的浏览器版本：**同一套关卡数据和图片，60 关、768 个物品**，
-在电脑和手机浏览器里都能直接玩。
+小程序版（`../miniprogram/`）的浏览器版本：**同一套关卡数据和图片，只保留 10 关**
+（按知名度挑的顶级恐龙：梁龙、雷龙、剑龙、棘龙、甲龙、翼龙、腕龙、三角龙、迅掠龙、霸王龙，
+共 134 个物品），在电脑和手机浏览器里都能直接玩。
+
+小程序那边仍然是原书全部 60 关；「保留哪几关」由 `tools/build-web.py` 顶部那份名单决定
+（只影响 `web/`）。
 
 ## 一、怎么打开
 
@@ -21,14 +25,14 @@
 
 ```
 web/
-  index.html          首页：封面 + 总进度 + 60 关的关卡格子
-  play.html           游戏页：play.html?level=17 这样带关卡号进来
-  book.html           翻书模式：封面 → 目录 → 54 关 → 封底，纸页卷曲翻页
+  index.html          首页：封面 + 总进度 + 10 关的关卡格子
+  play.html           游戏页：play.html?level=7 这样带关卡号进来
+  book.html           翻书模式：封面 → 目录 → 10 关 → 封底，纸页卷曲翻页
   about.html          玩法说明 + 快捷键 + 清空进度
-  css/app.css         全部样式（小程序 app/index/play/about 四个 wxss 的合体）
+  css/app.css         全部样式（小程序 app/index/play/about 四个 wxss 的合体；背景已改纯白）
   css/book.css        翻书模式的样式（书页、卷曲切片、HUD、游戏浮层）
   js/data.js          关卡数据（由 tools/build-web.py 生成，勿手改）
-  js/store.js         进度存储（localStorage，键名和小程序版一致）
+  js/store.js         进度存储（localStorage，键名 vc_progress_v3）
   js/util.js          rpx 换算、提示条、确认框、振动
   js/index.js         首页
   js/play.js          游戏页（核心：排版、点击判定、金色高亮、提示、故事、通关）
@@ -37,16 +41,16 @@ web/
   assets/
     book/cover.jpg    书本封面（PDF 第一页，由 tools/pdf_cover.py 导出）
     cvr/dino.jpg      封面
-    pic/dino/<页号>.jpg   场景大图
+    pic/dino/<页号>.jpg   场景大图（只保留这 10 关的）
     hdr/dino/<页号>.jpg   标题 + 故事
     spr/dino/<页号>.png   精灵图：普通图标 / 已找到图标 / 图中高亮
   tools/
-    build-web.py      从 miniprogram/ 同步关卡数据和图片
+    build-web.py      从 miniprogram/ 同步关卡数据和图片（顶部的 KEEP 名单决定保留哪 10 关）
     pick.html         坐标拾取工具（手动修正某个物品的位置，见第五节）
     pdf_cover.py      从原始 PDF 导出翻书模式的封面
 ```
 
-小程序把图片按分包（`sp1`…`sp8`）打包，那是微信「主包 ≤2MB」的限制逼出来的；
+小程序把图片按分包（`sp1`…`sp9`）打包，那是微信「主包 ≤2MB」的限制逼出来的；
 网页没有这个限制，所以这里是平铺的 `assets/pic|hdr|spr/dino/`。
 
 ## 三、玩法
@@ -69,8 +73,10 @@ web/
 * **键盘**：`H` 提示、`S` 故事、`Esc` 关闭浮层、`Enter` 通关后进下一关。
 * **鼠标长按**：按住卡片 0.55 秒（手机上是长按）。
 
-进度存在浏览器的 localStorage（键名 `vc_progress_v2`），**和小程序版的进度不通用**
+进度存在浏览器的 localStorage（键名 `vc_progress_v3`），**和小程序版的进度不通用**
 （一个在微信里，一个在浏览器里），结构和字段是一样的。
+键名带 `_v3` 是因为网页版把关卡重排成了 1…10：老键里那 60 关的进度按关卡号读会张冠李戴
+（首页会显示「已通关 12 / 10 关」），所以直接换了键名，旧进度留在 `vc_progress_v2` 里没动。
 
 ## 四、排版是怎么定的
 
@@ -91,13 +97,14 @@ web/
 
 ## 五、翻书模式（book.html）
 
-把所有关卡装订成一本书：**封面 → 目录 → 第 1 关 … 第 60 关 → 封底**，翻页是纸页卷曲的效果。
+把所有关卡装订成一本书：**封面 → 目录 → 第 1 关 … 第 10 关 → 封底**（共 13 页），
+翻页是纸页卷曲的效果。
 
-* 打开：`book.html`（线上 `https://<你的站点>/book.html`，也可以 `book.html?level=17` 直接翻到第 17 关）。
+* 打开：`book.html`（线上 `https://<你的站点>/book.html`，也可以 `book.html?level=7` 直接翻到第 7 关）。
   网格首页里也有「翻书模式」按钮进去。
 * **封面**用的是原始 PDF 的第一页（`assets/book/cover.jpg`，由 `tools/pdf_cover.py` 从
   `tools/locator.py` 里的 `SRC_DIR` 那份 PDF 导出）。
-* **目录页**列出 60 关（关号 + 恐龙名 + 已找到数量，通关的标黄），点任意一关直接翻到那一页。
+* **目录页**列出 10 关（关号 + 恐龙名 + 已找到数量，通关的标黄），点任意一关直接翻到那一页。
 * **关卡页里嵌的就是游戏页本身**（`play.html?level=N&embed=1` 的 iframe 铺满整页），
   所以**翻到哪一关就能直接在那页上玩**，玩法、判定、金色高亮、提示、故事、进度都和网格模式一模一样。
   游戏里的「返回」= 回到目录页，「下一关」= 让书翻一页过去（而不是自己跳页）。
@@ -122,7 +129,7 @@ web/
 ### 版面自检（物品栏不会越线、比例和图中一致）
 
 因为关卡页用的就是游戏页本身，版面规则和网格模式完全一致。逐关量过（书页尺寸 414×557 与手机
-390×844 两种，54 关 × 全物品）：
+390×844 两种，全部关卡 × 全物品）：
 
 * **不越线**：物品卡片既不压到图画框、也不超出自己那一格（越线面积 0）；
 * **1:1**：卡片图案尺寸 = 该物品在图中的显示尺寸，偏差 ≤1.5px（取整误差）。
@@ -134,9 +141,16 @@ cd web
 python tools/build-web.py
 ```
 
-它会把 `miniprogram/sp1…sp8` 里的图片平铺到 `web/assets/`，并把
-`miniprogram/data/dino.js`、`books.js`（`module.exports = {...}`）转成浏览器能直接
-`<script>` 加载的 `js/data.js`，最后自检「每关的 pic/hdr/spr 都在、每个物品都有 rect/hot/icon」。
+脚本顶部的 `KEEP` 名单决定网页版保留哪 10 关（写的是**原数据里的关卡号 + 恐龙名**，
+名字对不上会直接报错，不静默出错）。它做的事：
+
+* 按名单筛出 10 关，**把关卡号重排成 1…10**（`page` 图片页号保持原样）；
+* 只把这些关的图从 `miniprogram/sp1…sp9` 平铺到 `web/assets/`，并删掉 `assets/` 里其它页的残留；
+* 把 `miniprogram/data/dino.js`、`books.js`（`module.exports = {...}`）转成浏览器能直接
+  `<script>` 加载的 `js/data.js`；
+* 自检「每关的 pic/hdr/spr 都在、每个物品都有 rect/hot/icon」。
+
+想换一批关卡、或者改回全部 60 关：改 `KEEP` 再跑一次即可（图片和数据都会跟着变）。
 素材本身是用 `../tools/` 里的脚本从 PDF 生成的，见总 README。
 
 关卡数据是用 `<script src="js/data.js?t=…">`（按分钟取时间戳）加载的，
@@ -160,12 +174,16 @@ python tools/build-web.py
 
 | | 小程序 | 网页 |
 | --- | --- | --- |
+| 关卡 | 原书全部 60 关 | 只保留 10 关（`build-web.py` 的 `KEEP`），关号重排成 1…10 |
+| 背景 | 原书纸色（米色） | 纯白（页面、书页、卡片、浮层都是） |
 | 图片位置 | 按分包打包在包里 | 平铺在 `assets/` 下 |
 | 页面 | 每个分包里各有一份 play 页 | 一个 `play.html?level=N` |
-| 进度 | `wx.setStorageSync` | `localStorage` |
+| 进度 | `wx.setStorageSync`（键名 `vc_progress_v2`） | `localStorage`（键名 `vc_progress_v3`） |
 | 点错的反馈 | 只有短振动 + 掉一颗心 | 振动 + 红圈 + 掉一颗心（桌面没有振动） |
 | 关卡图片 | `wx.loadSubpackage` 按需下载 | 浏览器按需加载，不用管 |
 | 排版 | 图画宽度来回算两遍 | 图画宽度二分取最大 |
+
+> 「已找到」的金黄色是玩法反馈，不是背景，两边都保留。
 
 ## 八、版权
 

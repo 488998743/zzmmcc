@@ -1,7 +1,7 @@
 /**
- * 翻书模式：把 54 关装订成一本书。
+ * 翻书模式：把 10 关装订成一本书。
  *
- *   [封面（PDF 第一页）] → [目录（每关可点）] → [第 1 关] … [第 54 关] → [封底]
+ *   [封面（PDF 第一页）] → [目录（每关可点）] → [第 1 关] … [第 10 关] → [封底]
  *
  * 翻页时不是整页平移，而是把纸当成一根等长折线折成弧形：
  * 把翻动的那一页切成 STRIPS 条，从书脊（左边）出发逐段累加角度和位置，
@@ -13,7 +13,7 @@
 (function () {
   var BOOK = (window.VC_BOOK_DATA || {}).dino
   if (!BOOK) {
-    document.body.innerHTML = '<p style="color:#eee;font:14px sans-serif;padding:20px">缺少 js/data.js</p>'
+    document.body.innerHTML = '<p style="color:#46424f;font:14px sans-serif;padding:20px">缺少 js/data.js</p>'
     return
   }
   var LEVELS = BOOK.levels
@@ -257,12 +257,12 @@
       if (!node) continue
       node.style.transform = 'translate3d(' + s.x.toFixed(2) + 'px,0,' + s.z.toFixed(2) + 'px) rotateY(' +
         s.a.toFixed(4) + 'rad)'
-      // 明暗：转得越多越暗，靠近弯折处的边缘再压一道
+      // 明暗：转得越多越暗，靠近弯折处的边缘再压一道（中性灰，背景是白的）
       var shade = node.querySelector('.shade')
       var away = Math.min(1, Math.abs(s.a) / (Math.PI * 0.75))
       shade.style.background =
-        'linear-gradient(to right, rgba(70,50,22,' + (0.03 + away * 0.26).toFixed(3) + '), ' +
-        'rgba(70,50,22,' + (0.01 + away * 0.13).toFixed(3) + ') 58%, ' +
+        'linear-gradient(to right, rgba(0,0,0,' + (0.03 + away * 0.26).toFixed(3) + '), ' +
+        'rgba(0,0,0,' + (0.01 + away * 0.13).toFixed(3) + ') 58%, ' +
         'rgba(255,255,255,' + (0.34 * (1 - away)).toFixed(3) + '))'
     }
     // 被翻开的页上落一道阴影

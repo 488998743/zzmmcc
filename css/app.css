@@ -5,7 +5,8 @@
 
 :root {
   --rpx: 1px;
-  --bg: #f3efe6;
+  /* 背景统一纯白（原来是原书纸色的米色 #f3efe6） */
+  --bg: #ffffff;
   --card: #ffffff;
   --ink: #2c2a33;
   --muted: #8b8794;
@@ -138,7 +139,7 @@ body {
   width: calc(300 * var(--rpx));
   height: calc(300 * var(--rpx));
   flex: none;
-  background: #e8e4dc;
+  background: #fff;
   object-fit: cover;
 }
 
@@ -208,8 +209,10 @@ body {
 
 .lv.done { background: linear-gradient(160deg, #fff6d8, #ffe9a8); }
 
+/* 通关的格子留金色（那是"已通关"的提示），刚开始的格子也回到纯白，
+   靠那圈金色描边表示"有进度" */
 .lv.started {
-  background: #fffdf5;
+  background: #fff;
   border: calc(2 * var(--rpx)) solid rgba(255, 180, 0, 0.45);
 }
 
@@ -492,7 +495,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: calc(12 * var(--rpx));
-  background: rgba(255, 255, 255, 0.85);
+  background: #fff;
   border: calc(2 * var(--rpx)) solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
   position: relative;
@@ -525,10 +528,12 @@ body {
 .crop img { display: block; }
 
 /* ---------------------------------------------------------------- 浮层 */
+/* 遮罩也换成白的（原来是半透明黑）：底下压着的东西只是"变淡"，
+   面板靠边框 + 影子跟背景分开，不然白底白板会糊在一起 */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(28, 22, 40, 0.55);
+  background: rgba(255, 255, 255, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -542,6 +547,8 @@ body {
   max-width: calc(100vw - calc(40 * var(--rpx)));
   padding: calc(40 * var(--rpx)) calc(30 * var(--rpx)) calc(34 * var(--rpx));
   text-align: center;
+  border: calc(2 * var(--rpx)) solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 calc(10 * var(--rpx)) calc(30 * var(--rpx)) rgba(0, 0, 0, 0.14);
 }
 
 .panel-emoji { font-size: calc(76 * var(--rpx)); }
@@ -568,7 +575,7 @@ body {
 
 .overlay.story {
   flex-direction: column;
-  background: rgba(28, 22, 40, 0.82);
+  background: rgba(255, 255, 255, 0.96);
   padding: calc(40 * var(--rpx)) calc(24 * var(--rpx));
   cursor: zoom-out;
   overflow: hidden auto;
@@ -579,13 +586,14 @@ body {
   max-width: var(--pane);
   border-radius: calc(20 * var(--rpx));
   background: #fff;
+  border: calc(2 * var(--rpx)) solid rgba(0, 0, 0, 0.08);
 }
 
 .story-tip {
-  color: #fff;
+  color: var(--muted);
   font-size: calc(24 * var(--rpx));
   margin-top: calc(20 * var(--rpx));
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* ---------------------------------------------------------------- 说明页 */
@@ -617,7 +625,7 @@ kbd {
   display: inline-block;
   padding: calc(2 * var(--rpx)) calc(8 * var(--rpx));
   border-radius: calc(6 * var(--rpx));
-  background: #f0ede6;
+  background: #fff;
   border: calc(1 * var(--rpx)) solid rgba(0, 0, 0, 0.1);
   font-family: ui-monospace, Consolas, monospace;
   font-size: calc(22 * var(--rpx));
@@ -630,8 +638,10 @@ kbd {
   left: 50%;
   bottom: 12vh;
   transform: translateX(-50%);
-  background: rgba(28, 22, 40, 0.86);
-  color: #fff;
+  background: #fff;
+  color: #46424f;
+  border: calc(2 * var(--rpx)) solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 calc(6 * var(--rpx)) calc(20 * var(--rpx)) rgba(0, 0, 0, 0.14);
   font-size: calc(26 * var(--rpx));
   padding: calc(16 * var(--rpx)) calc(28 * var(--rpx));
   border-radius: 999rpx;
@@ -648,7 +658,7 @@ kbd {
 .dialog {
   position: fixed;
   inset: 0;
-  background: rgba(28, 22, 40, 0.55);
+  background: rgba(255, 255, 255, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -662,6 +672,8 @@ kbd {
   max-width: calc(100vw - calc(40 * var(--rpx)));
   background: #fff;
   border-radius: calc(24 * var(--rpx));
+  border: calc(2 * var(--rpx)) solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 calc(10 * var(--rpx)) calc(30 * var(--rpx)) rgba(0, 0, 0, 0.14);
   padding: calc(34 * var(--rpx)) calc(30 * var(--rpx)) calc(24 * var(--rpx));
   text-align: center;
 }

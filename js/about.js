@@ -8,7 +8,7 @@
     if (book) $('total').textContent = (book.levels || []).length
 
     $('btnReset').addEventListener('click', function () {
-      var n = book ? (book.levels || []).length : 54
+      var n = book ? (book.levels || []).length : 10
       util.confirmDialog({
         title: '清空所有进度',
         body: '这会删除 ' + n + ' 关的全部闯关进度，确定吗？',
