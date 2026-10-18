@@ -231,12 +231,18 @@
 
   function copy(text, tip) {
     var done = function () { el.log.textContent = tip }
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done)
-    else {
+    function fallback() {
       var ta = document.createElement('textarea')
       ta.value = text; document.body.appendChild(ta); ta.select()
       try { document.execCommand('copy') } catch (e) {}
-      ta.remove(); done()
+      ta.remove()
+    }
+    // 写剪贴板可能被浏览器拒绝（不是用户手势 / 权限策略），那时退回 select+execCommand，
+    // 别只是把"已复制"写进日志却什么都没复制
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(); done() })
+    } else {
+      fallback(); done()
     }
   }
 
@@ -260,15 +266,18 @@
   el.reset.addEventListener('click', function () { delete S.rects[key(S.index)]; render() })
   el.copy.addEventListener('click', function () {
     var l = lv()
-    var text = '第' + S.level + '关 ' + nameOf(l.items[S.index], S.index) + ' rect=' + el.rectText.textContent
-    copy(text, '已复制（带关卡和物品名），发给我就行')
+    // 带上页号和物品序号：同一关里有重名/没名字的物品，只写名字定位不到唯一一个
+    var text = '第' + S.level + '关 第' + l.page + '页 #' + (S.index + 1) + ' ' +
+      nameOf(l.items[S.index], S.index) + ' rect=' + el.rectText.textContent
+    copy(text, '已复制（关卡、页号、物品序号都带上了），发给我就行')
   })
   el.copyAll.addEventListener('click', function () {
     var lines = ['恐龙 找物坐标修正：']
     Object.keys(S.rects).forEach(function (k) {
       var p = k.split(':'), L = Number(p[0]), i = Number(p[1])
       var l = levels.filter(function (x) { return x.level === L })[0]
-      lines.push('第' + L + '关 ' + nameOf(l.items[i], i) + ' rect=[' + S.rects[k].join(', ') + ']')
+      lines.push('第' + L + '关 第' + l.page + '页 #' + (i + 1) + ' ' +
+        nameOf(l.items[i], i) + ' rect=[' + S.rects[k].join(', ') + ']')
     })
     copy(lines.join('\n'), '已复制 ' + (lines.length - 1) + ' 条改动，发给我就行')
   })
